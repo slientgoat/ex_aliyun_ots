@@ -231,13 +231,13 @@ defmodule Sample do
     put_row "table_name",
       [{"key1", "id1"}],
       [{"name", "name1"}, {"age", 20}],
-      condition: condition(RowExistence.expect_not_exist),
+      condition: condition(:expect_not_exist),
       return_type: :pk
 
     put_row "table_name",
       [{"key1", "id1"}],
       [{"name", "name1"}, {"age", 20}],
-      condition: condition(RowExistence.expect_not_exist),
+      condition: condition(:expect_not_exist),
       transaction_id: "transaction_id"
       return_type: :pk
   end
