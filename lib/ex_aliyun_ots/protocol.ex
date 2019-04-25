@@ -25,7 +25,7 @@ defmodule ExAliyunOts.Protocol do
   end
 
   defp get_x_ots_headers_to_auth(request) do
-    md5 = :crypto.hash(:md5, request.body) |> Base.encode16 |> Base.encode64
+    md5 = :crypto.hash(:md5, request.body) |> Base.encode64
     date = Timex.format!(Timex.now(), "%Y-%m-%dT%H:%M:%S.000Z", :strftime)
     instance = request.instance
     headers = [
