@@ -4,7 +4,7 @@ defmodule ExAliyunOts.Client do
 
   @request_timeout 60_000
 
-  alias ExAliyunOts.Client.{Table, Row, Search, Transaction}
+  alias ExAliyunOts.Client.{Table, Row, Search, Transaction, Tunnel}
 
   alias ExAliyunOts.PlainBuffer
 
@@ -154,6 +154,12 @@ defmodule ExAliyunOts.Client do
     call_transaction(instance_key, {:abort_transaction, encoded_request}, request_timeout)
   end
 
+  def create_tunnel(instance_key, kvs, options \\ [request_timeout: @request_timeout]) do
+    encoded_request = Tunnel.request_to_create_tunnel(kvs)
+    request_timeout = Keyword.get(options, :request_timeout, @request_timeout)
+    call_transaction(instance_key, {:create_tunnel, encoded_request}, request_timeout)
+  end
+
   def handle_call({:create_table, request_body}, _from, state) do
     result = Table.remote_create_table(state.instance, request_body)
     {:reply, result, state}
@@ -243,6 +249,10 @@ defmodule ExAliyunOts.Client do
   end
   def handle_call({:abort_transaction, request_body}, _from, state) do
     result = Transaction.remote_abort_transaction(state.instance, request_body)
+    {:reply, result, state}
+  end
+  def handle_call({:create_tunnel, request_body}, _from, state) do
+    result = Tunnel.remote_create_tunnel(state.instance, request_body)
     {:reply, result, state}
   end
 

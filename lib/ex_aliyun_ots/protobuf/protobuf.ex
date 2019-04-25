@@ -9,3 +9,7 @@ end
 defmodule ExAliyunOts.TableStoreSearch do
   use Protobuf, from: Path.expand("./search.proto", __DIR__)
 end
+
+defmodule ExAliyunOts.TableStoreTunnel do
+  use Protobuf, from: Path.expand("./table_store_tunnel.proto", __DIR__)
+end

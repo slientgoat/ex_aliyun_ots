@@ -1,6 +1,7 @@
 defmodule ExAliyunOts do
 
   defmacro __using__(opts \\ []) do
+    #TODO 什么用，深度前序遍历
     opts = Macro.prewalk(opts, &Macro.expand(&1, __CALLER__))
 
     quote do
@@ -107,6 +108,15 @@ defmodule ExAliyunOts do
         execute_abort_transaction(@instance, transaction_id, options)
       end
 
+      alias ExAliyunOts.Client
+      def create_tunnel(table_name, tunnel_name, tunnel_type, options \\ Keyword.new()) do
+        kvs = [
+          table_name: table_name,
+          tunnel_name: tunnel_name,
+          tunnel_type: tunnel_type
+        ]
+        Client.create_tunnel(@instance, kvs, options)
+      end
     end
   end
 
