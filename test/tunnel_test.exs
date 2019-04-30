@@ -3,6 +3,9 @@ defmodule ExAliyunOtsTest.TunnelTest do
   @instance_key EDCEXTestInstance
   @table_name "pxy_test"
   @tunnel_name "exampleTunnel"
+  @client_tag :inet.gethostname()
+              |> elem(1)
+  @request_timeout 30
   use ExAliyunOts, instance: @instance_key
   alias ExAliyunOts.TableStoreTunnel.DescribeTunnelResponse
   alias ExAliyunOts.TableStoreTunnel.ClientConfig
@@ -41,29 +44,43 @@ defmodule ExAliyunOtsTest.TunnelTest do
   test "tunnel/getcheckpoint", context do
     result = connect_tunnel(context.tunnel.tunnel_id, %ClientConfig{})
     {:ok, %ConnectResponse{client_id: client_id}} = result
-    channel_id = context.channels |> List.first() |> Map.get(:channel_id)
-    result2 = get_checkpoint(context.tunnel.tunnel_id,client_id,channel_id)
+    channel_id = context.channels
+                 |> List.first()
+                 |> Map.get(:channel_id)
+    result2 = get_checkpoint(context.tunnel.tunnel_id, client_id, channel_id)
     assert {:ok, %GetCheckpointResponse{}} = result2
-  end
-
-  test "tunnel/checkpoint", context do
-    result = connect_tunnel(context.tunnel.tunnel_id, %ClientConfig{})
-    {:ok, %ConnectResponse{client_id: client_id}} = result
-    channel_id = context.channels |> List.first() |> Map.get(:channel_id)
-    result2 = get_checkpoint(context.tunnel.tunnel_id,client_id,channel_id)
-    {:ok, %GetCheckpointResponse{checkpoint: checkpoint,sequence_number: sequence_number}} = result2
-    result3 = checkpoint(context.tunnel.tunnel_id,client_id,channel_id,checkpoint,sequence_number+1)
-    assert {:ok, %CheckpointResponse{}} = result3
   end
 
   test "tunnel/readrecords", context do
     result = connect_tunnel(context.tunnel.tunnel_id, %ClientConfig{})
     {:ok, %ConnectResponse{client_id: client_id}} = result
-    channel_id = context.channels |> List.first() |> Map.get(:channel_id)
-    result2 = get_checkpoint(context.tunnel.tunnel_id,client_id,channel_id)
-    {:ok, %GetCheckpointResponse{checkpoint: checkpoint}} = result2
-    result3 = read_records(context.tunnel.tunnel_id,client_id,channel_id,checkpoint)
+    channel_id = context.channels
+                 |> List.first()
+                 |> Map.get(:channel_id)
+    result2 = get_checkpoint(context.tunnel.tunnel_id, client_id, channel_id)
+    {:ok, %GetCheckpointResponse{checkpoint: checkpoint, sequence_number: _sequence_number}} = result2
+    result3 = read_records(context.tunnel.tunnel_id, client_id, channel_id, checkpoint)
     assert {:ok, %ReadRecordsResponse{}} = result3
+  end
+
+  test "tunnel/checkpoint", context do
+    result = connect_tunnel(context.tunnel.tunnel_id, %ClientConfig{timeout: @request_timeout, client_tag: @client_tag})
+    {:ok, %ConnectResponse{client_id: client_id}} = result
+    channel_id = context.channels
+                 |> List.first()
+                 |> Map.get(:channel_id)
+    result2 = get_checkpoint(context.tunnel.tunnel_id, client_id, channel_id)
+    {:ok, %GetCheckpointResponse{checkpoint: checkpoint, sequence_number: sequence_number}} = result2
+    result3 = read_records(context.tunnel.tunnel_id, client_id, channel_id, checkpoint)
+    {:ok, %ReadRecordsResponse{next_token: next_token, records: records}} = result3
+
+    cond do
+      records == [] ->
+        :ok
+      true ->
+        result4 = checkpoint(context.tunnel.tunnel_id, client_id, channel_id, next_token, sequence_number + 1)
+        assert {:ok, %CheckpointResponse{}} = result4
+    end
   end
 
   def patch_channels(channels) do
@@ -71,7 +88,8 @@ defmodule ExAliyunOtsTest.TunnelTest do
       channels,
       fn info ->
         version = Integer.floor_div(info.channel_rpo, 1000000)
-        status = info.channel_status |> String.to_atom()
+        status = info.channel_status
+                 |> String.to_atom()
 
         %Channel{channel_id: info.channel_id, version: version, status: status}
       end
@@ -81,3 +99,4 @@ defmodule ExAliyunOtsTest.TunnelTest do
   end
 
 end
+
