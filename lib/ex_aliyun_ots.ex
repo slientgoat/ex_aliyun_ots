@@ -110,12 +110,93 @@ defmodule ExAliyunOts do
 
       alias ExAliyunOts.Client
       def create_tunnel(table_name, tunnel_name, tunnel_type, options \\ Keyword.new()) do
-        kvs = [
+        keywords = [
           table_name: table_name,
           tunnel_name: tunnel_name,
           tunnel_type: tunnel_type
         ]
-        Client.create_tunnel(@instance, kvs, options)
+        Client.create_tunnel(@instance, keywords, options)
+      end
+
+      def delete_tunnel(table_name, tunnel_name, tunnel_id, options \\ Keyword.new()) do
+        keywords = [
+          table_name: table_name,
+          tunnel_name: tunnel_name,
+          tunnel_id: tunnel_id
+        ]
+        Client.delete_tunnel(@instance, keywords, options)
+      end
+
+      def list_tunnel(table_name, options \\ Keyword.new()) do
+        keywords = [
+          table_name: table_name
+        ]
+        Client.list_tunnel(@instance, keywords, options)
+      end
+
+      def describe_tunnel(table_name, tunnel_name, tunnel_id, options \\ Keyword.new()) do
+        keywords = [
+          table_name: table_name,
+          tunnel_name: tunnel_name,
+          tunnel_id: tunnel_id
+        ]
+        Client.describe_tunnel(@instance, keywords, options)
+      end
+
+      def connect_tunnel(tunnel_id, client_config, options \\ Keyword.new()) do
+        keywords = [
+          client_config: client_config,
+          tunnel_id: tunnel_id
+        ]
+        Client.connect_tunnel(@instance, keywords, options)
+      end
+
+
+      def heartbeat_tunnel(tunnel_id, client_id, channels, options \\ Keyword.new()) do
+        keywords = [
+          client_id: client_id,
+          tunnel_id: tunnel_id,
+          channels: channels
+        ]
+        Client.heartbeat_tunnel(@instance, keywords, options)
+      end
+
+      def shutdown_tunnel(tunnel_id, client_id, options \\ Keyword.new()) do
+        keywords = [
+          client_id: client_id,
+          tunnel_id: tunnel_id
+        ]
+        Client.shutdown_tunnel(@instance, keywords, options)
+      end
+
+      def get_checkpoint(tunnel_id, client_id, channel_id, options \\ Keyword.new()) do
+        keywords = [
+          client_id: client_id,
+          tunnel_id: tunnel_id,
+          channel_id: channel_id
+        ]
+        Client.get_checkpoint(@instance, keywords, options)
+      end
+
+      def checkpoint(tunnel_id, client_id, channel_id, checkpoint, sequence_number, options \\ Keyword.new()) do
+        keywords = [
+          client_id: client_id,
+          tunnel_id: tunnel_id,
+          channel_id: channel_id,
+          checkpoint: checkpoint,
+          sequence_number: sequence_number,
+        ]
+        Client.checkpoint(@instance, keywords, options)
+      end
+
+      def read_records(tunnel_id, client_id, channel_id, checkpoint, options \\ Keyword.new()) do
+        keywords = [
+          client_id: client_id,
+          tunnel_id: tunnel_id,
+          channel_id: channel_id,
+          token: checkpoint,
+        ]
+        Client.read_records(@instance, keywords, options)
       end
     end
   end

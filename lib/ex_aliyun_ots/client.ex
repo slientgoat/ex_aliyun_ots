@@ -154,10 +154,64 @@ defmodule ExAliyunOts.Client do
     call_transaction(instance_key, {:abort_transaction, encoded_request}, request_timeout)
   end
 
-  def create_tunnel(instance_key, kvs, options \\ [request_timeout: @request_timeout]) do
-    encoded_request = Tunnel.request_to_create_tunnel(kvs)
+  def create_tunnel(instance_key, keywords, options \\ [request_timeout: @request_timeout]) do
+    encoded_request = Tunnel.request_to_create_tunnel(keywords)
     request_timeout = Keyword.get(options, :request_timeout, @request_timeout)
     call_transaction(instance_key, {:create_tunnel, encoded_request}, request_timeout)
+  end
+
+  def delete_tunnel(instance_key, keywords, options \\ [request_timeout: @request_timeout]) do
+    encoded_request = Tunnel.request_to_delete_tunnel(keywords)
+    request_timeout = Keyword.get(options, :request_timeout, @request_timeout)
+    call_transaction(instance_key, {:delete_tunnel, encoded_request}, request_timeout)
+  end
+
+  def list_tunnel(instance_key, keywords, options \\ [request_timeout: @request_timeout]) do
+    encoded_request = Tunnel.request_to_list_tunnel(keywords)
+    request_timeout = Keyword.get(options, :request_timeout, @request_timeout)
+    call_transaction(instance_key, {:list_tunnel, encoded_request}, request_timeout)
+  end
+
+  def describe_tunnel(instance_key, keywords, options \\ [request_timeout: @request_timeout]) do
+    encoded_request = Tunnel.request_to_describe_tunnel(keywords)
+    request_timeout = Keyword.get(options, :request_timeout, @request_timeout)
+    call_transaction(instance_key, {:describe_tunnel, encoded_request}, request_timeout)
+  end
+
+  def connect_tunnel(instance_key, keywords, options \\ [request_timeout: @request_timeout]) do
+    encoded_request = Tunnel.request_to_connect(keywords)
+    request_timeout = Keyword.get(options, :request_timeout, @request_timeout)
+    call_transaction(instance_key, {:connect_tunnel, encoded_request}, request_timeout)
+  end
+
+  def heartbeat_tunnel(instance_key, keywords, options \\ [request_timeout: @request_timeout]) do
+    encoded_request = Tunnel.request_to_heartbeat(keywords)
+    request_timeout = Keyword.get(options, :request_timeout, @request_timeout)
+    call_transaction(instance_key, {:heartbeat_tunnel, encoded_request}, request_timeout)
+  end
+
+  def shutdown_tunnel(instance_key, keywords, options \\ [request_timeout: @request_timeout]) do
+    encoded_request = Tunnel.request_to_shutdown(keywords)
+    request_timeout = Keyword.get(options, :request_timeout, @request_timeout)
+    call_transaction(instance_key, {:shutdown_tunnel, encoded_request}, request_timeout)
+  end
+
+  def get_checkpoint(instance_key, keywords, options \\ [request_timeout: @request_timeout]) do
+    encoded_request = Tunnel.request_to_get_checkpoint(keywords)
+    request_timeout = Keyword.get(options, :request_timeout, @request_timeout)
+    call_transaction(instance_key, {:get_checkpoint, encoded_request}, request_timeout)
+  end
+
+  def checkpoint(instance_key, keywords, options \\ [request_timeout: @request_timeout]) do
+    encoded_request = Tunnel.request_to_checkpoint(keywords)
+    request_timeout = Keyword.get(options, :request_timeout, @request_timeout)
+    call_transaction(instance_key, {:checkpoint, encoded_request}, request_timeout)
+  end
+
+  def read_records(instance_key, keywords, options \\ [request_timeout: @request_timeout]) do
+    encoded_request = Tunnel.request_to_read_records(keywords)
+    request_timeout = Keyword.get(options, :request_timeout, @request_timeout)
+    call_transaction(instance_key, {:read_records, encoded_request}, request_timeout)
   end
 
   def handle_call({:create_table, request_body}, _from, state) do
@@ -255,7 +309,42 @@ defmodule ExAliyunOts.Client do
     result = Tunnel.remote_create_tunnel(state.instance, request_body)
     {:reply, result, state}
   end
-
+  def handle_call({:delete_tunnel, request_body}, _from, state) do
+    result = Tunnel.remote_delete_tunnel(state.instance, request_body)
+    {:reply, result, state}
+  end
+  def handle_call({:list_tunnel, request_body}, _from, state) do
+    result = Tunnel.remote_list_tunnel(state.instance, request_body)
+    {:reply, result, state}
+  end
+  def handle_call({:describe_tunnel, request_body}, _from, state) do
+    result = Tunnel.remote_describe_tunnel(state.instance, request_body)
+    {:reply, result, state}
+  end
+  def handle_call({:connect_tunnel, request_body}, _from, state) do
+    result = Tunnel.remote_connect(state.instance, request_body)
+    {:reply, result, state}
+  end
+  def handle_call({:heartbeat_tunnel, request_body}, _from, state) do
+    result = Tunnel.remote_heartbeat(state.instance, request_body)
+    {:reply, result, state}
+  end
+  def handle_call({:shutdown_tunnel, request_body}, _from, state) do
+    result = Tunnel.remote_shutdown(state.instance, request_body)
+    {:reply, result, state}
+  end
+  def handle_call({:get_checkpoint, request_body}, _from, state) do
+    result = Tunnel.remote_get_checkpoint(state.instance, request_body)
+    {:reply, result, state}
+  end
+  def handle_call({:checkpoint, request_body}, _from, state) do
+    result = Tunnel.remote_checkpoint(state.instance, request_body)
+    {:reply, result, state}
+  end
+  def handle_call({:read_records, request_body}, _from, state) do
+    result = Tunnel.remote_read_records(state.instance, request_body)
+    {:reply, result, state}
+  end
   defp call_transaction(instance_key, request, request_timeout) do
     :poolboy.transaction(
       instance_key,
