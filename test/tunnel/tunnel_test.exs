@@ -15,8 +15,8 @@ defmodule ExAliyunOtsTest.TunnelTest do
     assert {:ok, %HeartbeatResponse{}} = result2
   end
 
-  test "tunnel/shutdown", %{client_id: client_id} = context do
-    result2 = shutdown_tunnel(context.tunnel.tunnel_id, client_id)
+  test "tunnel/shutdown", context do
+    result2 = Case.shutdown(context)
     assert {:ok, %ShutdownResponse{}} = result2
   end
 

@@ -41,6 +41,9 @@ defmodule ExAliyunOtsTest.TunnelCase do
   setup do
     {:ok, %DescribeTunnelResponse{tunnel: tunnel, channels: channels}} = describe_tunnel(@table_name, @tunnel_name, nil)
     %{client_id: client_id, channel_id: channel_id} = connect(tunnel, channels)
+    on_exit(fn ->
+      shutdown(%{client_id: client_id,tunnel: tunnel})
+    end)
     {:ok, [tunnel: tunnel, channels: channels, client_id: client_id, channel_id: channel_id]}
   end
 
@@ -51,6 +54,10 @@ defmodule ExAliyunOtsTest.TunnelCase do
                  |> List.first()
                  |> Map.get(:channel_id)
     %{client_id: client_id, channel_id: channel_id}
+  end
+
+  def shutdown(%{client_id: client_id} = context) do
+    shutdown_tunnel(context.tunnel.tunnel_id, client_id)
   end
 
   def checkpoint(%{client_id: client_id, channel_id: channel_id} = context) do
