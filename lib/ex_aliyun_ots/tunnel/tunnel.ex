@@ -7,6 +7,15 @@ defmodule ExAliyunOts.Client.Tunnel do
                                       GetCheckpointRequest, GetCheckpointResponse, CheckpointRequest,
                                       CheckpointResponse, ReadRecordsRequest, ReadRecordsResponse}
   alias ExAliyunOts.Http
+  #TODO 错误处理
+  def errCodeParamInvalid, do: "OTSParameterInvalid"
+  def errCodeResourceGone, do: "OTSResourceGone"
+  def errCodeServerUnavailable, do: "OTSTunnelServerUnavailable"
+  def errCodeSequenceNotMatch, do: "OTSSequenceNumberNotMatch"
+  def errCodeClientError, do: "OTSClientError"
+  def errCodeTunnelExpired, do: "OTSTunnelExpired"
+  def errCodePermissionDenied, do: "OTSPermissionDenied"
+  def errCodeTunnelExist, do: "OTSTunnelExist"
 
   def request_to_create_tunnel(keywords) do
     CreateTunnelRequest.new(tunnel: Tunnel.new(keywords))
@@ -121,6 +130,7 @@ defmodule ExAliyunOts.Client.Tunnel do
   end
 
   def remote_heartbeat(instance, request_body) do
+    IO.inspect(request_body,label: "remote_heartbeat2")
     result =
       instance
       |> Http.client("/tunnel/heartbeat", request_body, &HeartbeatResponse.decode/1)
@@ -223,4 +233,6 @@ defmodule ExAliyunOts.Client.Tunnel do
     )
     result
   end
+
+
 end

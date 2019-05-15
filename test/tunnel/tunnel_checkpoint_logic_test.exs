@@ -99,8 +99,10 @@ defmodule ExAliyunOtsTest.TunnelCheckpointLogicTest do
     {:ok, %ReadRecordsResponse{next_token: _, records: rec}} = r
     assert(length(rec)== 2)
   end
-
-  # 按序消费
+  
+  @table_name "pxy_test"
+  @tunnel_name "exampleTunnel"
+  # 按序消费,同时验证channel的状态="CLOSE"时，readrecords、checkpoint和get_checkpoint接口是否可以继续使用？结论：是的
   test "normal tunnel checkpointer logic", %{client_id: client_id, channel_id: channel_id} = context  do
     Case.checkpoint(context)
     Case.put_row()
@@ -115,15 +117,41 @@ defmodule ExAliyunOtsTest.TunnelCheckpointLogicTest do
 
     r3 = read_records(context.tunnel.tunnel_id, client_id, channel_id, token2)
     {:ok, %ReadRecordsResponse{next_token: token3, records: [_]}} = r3
-    {:ok, %CheckpointResponse{}} = checkpoint(context.tunnel.tunnel_id, client_id, channel_id, token2, seq_num + 1)
+    {:ok, %CheckpointResponse{}} = checkpoint(context.tunnel.tunnel_id, client_id, channel_id, token3, seq_num + 1)
+    token4 = wait_channel_status_to_close(context,client_id, channel_id, token3)
 
-    {:ok, %CheckpointResponse{}} = checkpoint(context.tunnel.tunnel_id, client_id, channel_id, token3, seq_num + 2)
+    {:ok, %CheckpointResponse{}} = checkpoint(context.tunnel.tunnel_id, client_id, channel_id, token4, seq_num + 2)
 
     r5 = get_checkpoint(context.tunnel.tunnel_id, client_id, channel_id)
+
     {:ok, %GetCheckpointResponse{checkpoint: token5, sequence_number: _}} = r5
     r6 = read_records(context.tunnel.tunnel_id, client_id, channel_id, token5)
     {:ok, %ReadRecordsResponse{next_token: _, records: rec6}} = r6
     assert(length(rec6) == 0)
+
+  end
+
+
+  alias ExAliyunOts.TableStoreTunnel.DescribeTunnelResponse
+  
+  # 等待心跳超时，channel状态变成"CLOSE"后执行readreocrds
+  defp wait_channel_status_to_close(context,client_id, channel_id, token5) do
+    Process.sleep(10 * 1000)
+    with {:ok, %DescribeTunnelResponse{channels: [%{channel_status: "CLOSE"}]}} <- describe_tunnel(@table_name,@tunnel_name, nil),
+         {:ok, result2} <- read_records(context.tunnel.tunnel_id, client_id, channel_id, token5) do
+      if result2.records == [] do
+        Case.put_row()
+        wait_channel_status_to_close(context, client_id, channel_id, result2.next_token)
+      else
+        result2.next_token
+      end
+    else
+      {:ok, %DescribeTunnelResponse{channels: [%{channel_status: _}]}} ->
+        wait_channel_status_to_close(context, client_id, channel_id, token5)
+      error ->
+        IO.inspect(error, label: "wait_channel_status_to_close")
+        raise :readrecords_loop_error
+    end
 
   end
 end

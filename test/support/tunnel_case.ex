@@ -42,7 +42,9 @@ defmodule ExAliyunOtsTest.TunnelCase do
     {:ok, %DescribeTunnelResponse{tunnel: tunnel, channels: channels}} = describe_tunnel(@table_name, @tunnel_name, nil)
     %{client_id: client_id, channel_id: channel_id} = connect(tunnel, channels)
     on_exit(fn ->
-      shutdown(%{client_id: client_id,tunnel: tunnel})
+      with {:ok, %DescribeTunnelResponse{channels: [%{channel_status: "OPEN"}]}} <- describe_tunnel(@table_name,@tunnel_name, nil) do
+        shutdown(%{client_id: client_id,tunnel: tunnel})
+      end
     end)
     {:ok, [tunnel: tunnel, channels: channels, client_id: client_id, channel_id: channel_id]}
   end

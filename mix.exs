@@ -30,10 +30,11 @@ defmodule ExAliyunOts.Mixfile do
   defp deps do
     [
       {:exprotobuf, "~> 1.2"},
-      {:timex, "~> 3.3"},
+      {:timex, "~> 3.5"},
       {:poolboy, "~> 1.5"},
       {:retry, "~> 0.11.2"},
       {:tesla, "~> 1.2"},
+      {:broadway, "~> 0.1"},
       {:ex_doc, "~> 0.19", only: :dev, runtime: false},
       {:credo, "~> 1.0", only: :dev, runtime: false},
       {:benchee, "~> 0.14", only: :dev, runtime: false},
