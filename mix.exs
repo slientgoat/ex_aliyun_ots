@@ -7,7 +7,7 @@ defmodule ExAliyunOts.Mixfile do
       version: "0.2.2",
       elixir: "~> 1.5",
       elixirc_paths: elixirc_paths(Mix.env()),
-      start_permanent: Mix.env == :prod,
+      start_permanent: Mix.env() == :prod,
       description: description(),
       package: package(),
       deps: deps(),
@@ -34,12 +34,12 @@ defmodule ExAliyunOts.Mixfile do
       {:poolboy, "~> 1.5"},
       {:retry, "~> 0.11.2"},
       {:tesla, "~> 1.2"},
-      {:broadway, "~> 0.1"},
       {:ex_doc, "~> 0.19", only: :dev, runtime: false},
       {:credo, "~> 1.0", only: :dev, runtime: false},
       {:benchee, "~> 0.14", only: :dev, runtime: false},
       {:mock, "~> 0.3.2", only: :test},
-      {:excoveralls, "~> 0.10", only: :test}
+      {:excoveralls, "~> 0.10", only: :test},
+      {:broadway, "~> 0.1"}
     ]
   end
 
@@ -57,14 +57,15 @@ defmodule ExAliyunOts.Mixfile do
   end
 
   defp docs do
-    [main: "readme",
-     formatter_opts: [gfm: true],
-     extras: [
-       "README.md"
-     ]]
+    [
+      main: "readme",
+      formatter_opts: [gfm: true],
+      extras: [
+        "README.md"
+      ]
+    ]
   end
 
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
-
 end

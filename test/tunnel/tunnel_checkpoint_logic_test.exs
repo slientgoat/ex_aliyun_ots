@@ -1,6 +1,6 @@
 defmodule ExAliyunOtsTest.TunnelCheckpointLogicTest do
   @moduledoc """
-  主要用来测试ailiyun的表格存储的通道服务sdk的checkpoint机制的逻辑
+  主要用来测试ailiyun的表格存储的通道服务sdk的checkpoint机制的逻辑,为了避免干扰,需要避免启动了其它ExAliyunOts.Tunnel.Supervisor
   """
   use ExAliyunOtsTest.TunnelCase
   alias ExAliyunOtsTest.TunnelCase, as: Case
@@ -17,12 +17,12 @@ defmodule ExAliyunOtsTest.TunnelCheckpointLogicTest do
     r2 = get_checkpoint(context.tunnel.tunnel_id, client_id, channel_id)
     {:ok, %GetCheckpointResponse{checkpoint: checkpoint, sequence_number: _}} = r2
     r3 = read_records(context.tunnel.tunnel_id, client_id, channel_id, checkpoint)
-    {:ok, %ReadRecordsResponse{next_token: next_token1, records: records}} = r3
+    {:ok, %ReadRecordsResponse{next_token: next_token1, records: records}, _} = r3
     # r3 one record
     assert(length(records) == 1)
 
     r4 = read_records(context.tunnel.tunnel_id, client_id, channel_id, next_token1)
-    {:ok, %ReadRecordsResponse{next_token: next_token2, records: records}} = r4
+    {:ok, %ReadRecordsResponse{next_token: next_token2, records: records}, _} = r4
     # r4 zero record
     assert(length(records) == 0)
 
@@ -40,12 +40,12 @@ defmodule ExAliyunOtsTest.TunnelCheckpointLogicTest do
 
 
     r7 = read_records(context.tunnel.tunnel_id, client_id, channel_id, checkpoint)
-    {:ok, %ReadRecordsResponse{records: records}} = r7
+    {:ok, %ReadRecordsResponse{records: records}, _} = r7
     # r7 two record
     assert(length(records) == 2)
 
     r8 = read_records(context.tunnel.tunnel_id, client_id, channel_id, next_token2)
-    {:ok, %ReadRecordsResponse{next_token: _, records: records}} = r8
+    {:ok, %ReadRecordsResponse{next_token: _, records: records}, _} = r8
     # r8 one record
     assert(length(records) == 1)
     true
@@ -77,10 +77,10 @@ defmodule ExAliyunOtsTest.TunnelCheckpointLogicTest do
     {:ok, %GetCheckpointResponse{checkpoint: token1, sequence_number: seq_num}} = r1
 
     r2 = read_records(context.tunnel.tunnel_id, client_id, channel_id, token1)
-    {:ok, %ReadRecordsResponse{next_token: token2, records: [rec2]}} = r2
+    {:ok, %ReadRecordsResponse{next_token: token2, records: [rec2]}, _} = r2
     Case.put_row()
     r3 = read_records(context.tunnel.tunnel_id, client_id, channel_id, token2)
-    {:ok, %ReadRecordsResponse{next_token: token3, records: [rec3]}} = r3
+    {:ok, %ReadRecordsResponse{next_token: token3, records: [rec3]}, _} = r3
     assert(rec2.record != rec3.record)
 
     #更新消费数据位点至消费token3所对应的位点，相当于两个数据状态改为已消费
@@ -88,7 +88,7 @@ defmodule ExAliyunOtsTest.TunnelCheckpointLogicTest do
     pointer = get_checkpoint(context.tunnel.tunnel_id, client_id, channel_id)
     {:ok, %GetCheckpointResponse{checkpoint: checkpoint, sequence_number: _}} = pointer
     r = read_records(context.tunnel.tunnel_id, client_id, channel_id, checkpoint)
-    {:ok, %ReadRecordsResponse{next_token: _, records: rec}} = r
+    {:ok, %ReadRecordsResponse{next_token: _, records: rec}, _} = r
     assert(length(rec)== 0)
 
     #回退消费数据位点至token1所对应的位点，之前的两条已消费数据，恢复成未消费状态
@@ -96,7 +96,7 @@ defmodule ExAliyunOtsTest.TunnelCheckpointLogicTest do
     pointer = get_checkpoint(context.tunnel.tunnel_id, client_id, channel_id)
     {:ok, %GetCheckpointResponse{checkpoint: checkpoint, sequence_number: _}} = pointer
     r = read_records(context.tunnel.tunnel_id, client_id, channel_id, checkpoint)
-    {:ok, %ReadRecordsResponse{next_token: _, records: rec}} = r
+    {:ok, %ReadRecordsResponse{next_token: _, records: rec}, _} = r
     assert(length(rec)== 2)
   end
   
@@ -111,12 +111,12 @@ defmodule ExAliyunOtsTest.TunnelCheckpointLogicTest do
     {:ok, %GetCheckpointResponse{checkpoint: token1, sequence_number: seq_num}} = r1
 
     r2 = read_records(context.tunnel.tunnel_id, client_id, channel_id, token1)
-    {:ok, %ReadRecordsResponse{next_token: token2, records: [_]}} = r2
+    {:ok, %ReadRecordsResponse{next_token: token2, records: [_]}, _} = r2
 
     Case.put_row()
 
     r3 = read_records(context.tunnel.tunnel_id, client_id, channel_id, token2)
-    {:ok, %ReadRecordsResponse{next_token: token3, records: [_]}} = r3
+    {:ok, %ReadRecordsResponse{next_token: token3, records: [_]}, _} = r3
     {:ok, %CheckpointResponse{}} = checkpoint(context.tunnel.tunnel_id, client_id, channel_id, token3, seq_num + 1)
     token4 = wait_channel_status_to_close(context,client_id, channel_id, token3)
 
@@ -126,9 +126,12 @@ defmodule ExAliyunOtsTest.TunnelCheckpointLogicTest do
 
     {:ok, %GetCheckpointResponse{checkpoint: token5, sequence_number: _}} = r5
     r6 = read_records(context.tunnel.tunnel_id, client_id, channel_id, token5)
-    {:ok, %ReadRecordsResponse{next_token: _, records: rec6}} = r6
+    {:ok, %ReadRecordsResponse{next_token: _, records: rec6}, _} = r6
     assert(length(rec6) == 0)
 
+    # 因为规定时间内没有发送心跳，所以远程服务器client连接已被清理掉，再次发送心跳包会报错
+    z = heartbeat_tunnel(context.tunnel.tunnel_id, client_id, [])
+    assert(z == {:error, "OTSResourceGone [tunnelservice] client not exist"})
   end
 
 
@@ -138,7 +141,7 @@ defmodule ExAliyunOtsTest.TunnelCheckpointLogicTest do
   defp wait_channel_status_to_close(context,client_id, channel_id, token5) do
     Process.sleep(10 * 1000)
     with {:ok, %DescribeTunnelResponse{channels: [%{channel_status: "CLOSE"}]}} <- describe_tunnel(@table_name,@tunnel_name, nil),
-         {:ok, result2} <- read_records(context.tunnel.tunnel_id, client_id, channel_id, token5) do
+         {:ok, result2, _} <- read_records(context.tunnel.tunnel_id, client_id, channel_id, token5) do
       if result2.records == [] do
         Case.put_row()
         wait_channel_status_to_close(context, client_id, channel_id, result2.next_token)
@@ -153,6 +156,21 @@ defmodule ExAliyunOtsTest.TunnelCheckpointLogicTest do
         raise :readrecords_loop_error
     end
 
+  end
+
+  test "temp test", %{client_id: client_id, channel_id: channel_id} = context  do
+    Case.checkpoint(context)
+    l = batch_put_row(11)
+    r1 = get_checkpoint(context.tunnel.tunnel_id, client_id, channel_id)
+    {:ok, %GetCheckpointResponse{checkpoint: token1, sequence_number: _seq_num}} = r1
+    r3 = read_records(context.tunnel.tunnel_id, client_id, channel_id, token1)
+    {:ok, %ReadRecordsResponse{next_token: _, records: rec}, _} = r3
+    assert(length(rec) == length(l))
+
+  end
+
+  defp batch_put_row(n) do
+    Enum.map(1..n, fn _x -> Case.put_row() end)
   end
 end
 

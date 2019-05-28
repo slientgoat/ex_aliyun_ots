@@ -25,7 +25,7 @@ defmodule ExAliyunOtsTest.TunnelCase do
 
   @instance_key EDCEXTestInstance
   @table_name "pxy_test"
-  @tunnel_name "exampleTunnel"
+  @tunnel_name "add2"
   @client_tag :inet.gethostname()
               |> elem(1)
 
@@ -34,7 +34,7 @@ defmodule ExAliyunOtsTest.TunnelCase do
   alias ExAliyunOts.TableStoreTunnel.DescribeTunnelResponse
   alias ExAliyunOts.TableStoreTunnel.ClientConfig
   alias ExAliyunOts.TableStoreTunnel.ConnectResponse
-  alias ExAliyunOts.TableStoreTunnel.ShutdownResponse
+#  alias ExAliyunOts.TableStoreTunnel.ShutdownResponse
   alias ExAliyunOts.TableStoreTunnel.GetCheckpointResponse
   alias ExAliyunOts.TableStoreTunnel.CheckpointResponse
   alias ExAliyunOts.TableStoreTunnel.ReadRecordsResponse
@@ -66,7 +66,7 @@ defmodule ExAliyunOtsTest.TunnelCase do
     result2 = get_checkpoint(context.tunnel.tunnel_id, client_id, channel_id)
     {:ok, %GetCheckpointResponse{checkpoint: checkpoint, sequence_number: sequence_number}} = result2
     result3 = read_records(context.tunnel.tunnel_id, client_id, channel_id, checkpoint)
-    {:ok, %ReadRecordsResponse{next_token: next_token, records: records}} = result3
+    {:ok, %ReadRecordsResponse{next_token: next_token, records: records}, _} = result3
 
     cond do
       records == [] ->

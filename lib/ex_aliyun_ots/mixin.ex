@@ -334,6 +334,96 @@ defmodule ExAliyunOts.Mixin do
     Client.abort_transaction(instance_key, transaction_id, options)
   end
 
+  def execute_create_tunnel(instance_key, table_name, tunnel_name, tunnel_type, options \\ Keyword.new()) do
+    keywords = [
+      table_name: table_name,
+      tunnel_name: tunnel_name,
+      tunnel_type: tunnel_type
+    ]
+    Client.create_tunnel(instance_key, keywords, options)
+  end
+
+  def execute_delete_tunnel(instance_key, table_name, tunnel_name, tunnel_id, options \\ Keyword.new()) do
+    keywords = [
+      table_name: table_name,
+      tunnel_name: tunnel_name,
+      tunnel_id: tunnel_id
+    ]
+    Client.delete_tunnel(instance_key, keywords, options)
+  end
+
+  def execute_list_tunnel(instance_key, table_name, options \\ Keyword.new()) do
+    keywords = [
+      table_name: table_name
+    ]
+    Client.list_tunnel(instance_key, keywords, options)
+  end
+
+  def execute_describe_tunnel(instance_key, table_name, tunnel_name, tunnel_id, options \\ Keyword.new()) do
+    keywords = [
+      table_name: table_name,
+      tunnel_name: tunnel_name,
+      tunnel_id: tunnel_id
+    ]
+    Client.describe_tunnel(instance_key, keywords, options)
+  end
+
+  def execute_connect_tunnel(instance_key, tunnel_id, client_config, options \\ Keyword.new()) do
+    keywords = [
+      client_config: client_config,
+      tunnel_id: tunnel_id
+    ]
+    Client.connect_tunnel(instance_key, keywords, options)
+  end
+
+
+  def execute_heartbeat_tunnel(instance_key, tunnel_id, client_id, channels, options \\ Keyword.new()) do
+    keywords = [
+      client_id: client_id,
+      tunnel_id: tunnel_id,
+      channels: channels
+    ]
+    Client.heartbeat_tunnel(instance_key, keywords, options)
+  end
+
+  def execute_shutdown_tunnel(instance_key, tunnel_id, client_id, options \\ Keyword.new()) do
+    keywords = [
+      client_id: client_id,
+      tunnel_id: tunnel_id
+    ]
+    Client.shutdown_tunnel(instance_key, keywords, options)
+  end
+
+  def execute_get_checkpoint(instance_key, tunnel_id, client_id, channel_id, options \\ Keyword.new()) do
+    keywords = [
+      client_id: client_id,
+      tunnel_id: tunnel_id,
+      channel_id: channel_id
+    ]
+    Client.get_checkpoint(instance_key, keywords, options)
+  end
+
+  def execute_checkpoint(instance_key, tunnel_id, client_id, channel_id, checkpoint, seq, options \\ Keyword.new()) do
+    keywords = [
+      client_id: client_id,
+      tunnel_id: tunnel_id,
+      channel_id: channel_id,
+      checkpoint: checkpoint,
+      sequence_number: seq,
+    ]
+    Client.checkpoint(instance_key, keywords, options)
+  end
+
+  def execute_read_records(instance_key, tunnel_id, client_id, channel_id, checkpoint, options \\ Keyword.new()) do
+    keywords = [
+      client_id: client_id,
+      tunnel_id: tunnel_id,
+      channel_id: channel_id,
+      token: checkpoint,
+    ]
+    Client.read_records(instance_key, keywords, options)
+  end
+
   defp map_options(var, nil) do
     var
   end

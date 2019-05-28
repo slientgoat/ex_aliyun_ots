@@ -1,40 +1,70 @@
 defmodule ExAliyunOtsTest.TunnelTest do
   @moduledoc """
-  主要用来测试ailiyun的表格存储的通道服务sdk基础接口
+  主要用来测试ailiyun的表格存储的通道服务tunnel的重要函数逻辑
   """
-  use ExAliyunOtsTest.TunnelCase
-  alias ExAliyunOtsTest.TunnelCase, as: Case
-  alias ExAliyunOts.TableStoreTunnel.HeartbeatResponse
-  alias ExAliyunOts.TableStoreTunnel.ShutdownResponse
-  alias ExAliyunOts.TableStoreTunnel.GetCheckpointResponse
-  alias ExAliyunOts.TableStoreTunnel.ReadRecordsResponse
 
+  use ExUnit.Case
 
-  test "tunnel/heartbeat", %{client_id: client_id} = context do
-    result2 = heartbeat_tunnel(context.tunnel.tunnel_id, client_id, [])
-    assert {:ok, %HeartbeatResponse{}} = result2
+  alias ExAliyunOts.TableStoreTunnel.Channel, as: C
+  alias ExAliyunOts.Tunnel.Worker, as: W
+
+  def remote_source() do
+    [
+      %C{channel_id: "id0",version: 1,status: W.channel_status_close()},
+      %C{channel_id: "id1",version: 1,status: W.channel_status_open()},
+      %C{channel_id: "id2",version: 1,status: W.channel_status_open()},
+      %C{channel_id: "id3",version: 1,status: W.channel_status_open()},
+      %C{channel_id: "version_become_smaller",version: 2,status: W.channel_status_open()},
+      %C{channel_id: "same_version",version: 2,status: W.channel_status_open()},
+      %C{channel_id: "same_version_and_status",version: 2,status: W.channel_status_open()},
+    ]
   end
 
-  test "tunnel/shutdown", context do
-    result2 = Case.shutdown(context)
-    assert {:ok, %ShutdownResponse{}} = result2
+  def working() do
+    [
+      %C{channel_id: "id1",version: 1,status: W.channel_status_open()},
+      %C{channel_id: "id2",version: 1,status: W.channel_status_open()},
+      %C{channel_id: "id3",version: 1,status: W.channel_status_open()},
+      %C{channel_id: "version_become_smaller",version: 2,status: W.channel_status_open()},
+      %C{channel_id: "same_version",version: 2,status: W.channel_status_open()},
+      %C{channel_id: "same_version_and_status",version: 2,status: W.channel_status_open()},
+
+    ]
   end
 
-  test "tunnel/getcheckpoint", %{client_id: client_id, channel_id: channel_id} = context do
-    result2 = get_checkpoint(context.tunnel.tunnel_id, client_id, channel_id)
-    assert {:ok, %GetCheckpointResponse{}} = result2
+  def changed() do
+    [
+      %C{channel_id: "id2",version: 2,status: W.channel_status_open()},
+      %C{channel_id: "id3",version: 2,status: W.channel_status_closing()},
+      %C{channel_id: "id4",version: 1,status: W.channel_status_open()},
+      %C{channel_id: "id5",version: 1,status: W.channel_status_close()},
+      %C{channel_id: "id6",version: 1,status: W.channel_status_terminated()},
+      %C{channel_id: "version_become_smaller",version: 1,status: W.channel_status_terminated()},
+      %C{channel_id: "same_version",version: 2,status: W.channel_status_close()},
+      %C{channel_id: "same_version_and_status",version: 2,status: W.channel_status_open()},
+
+    ]
   end
 
-  test "tunnel/readrecords", %{client_id: client_id, channel_id: channel_id} = context do
-    result2 = get_checkpoint(context.tunnel.tunnel_id, client_id, channel_id)
-    {:ok, %GetCheckpointResponse{checkpoint: checkpoint, sequence_number: _sequence_number}} = result2
-    result3 = read_records(context.tunnel.tunnel_id, client_id, channel_id, checkpoint)
-    assert {:ok, %ReadRecordsResponse{}} = result3
+  def merged() do
+    [
+      %C{channel_id: "id1",version: 1+1,status: W.channel_status_close()},
+      %C{channel_id: "id2",version: 2,status: W.channel_status_open()},
+      %C{channel_id: "id3",version: 2,status: W.channel_status_closing()},
+      %C{channel_id: "id4",version: 1,status: W.channel_status_open()},
+      %C{channel_id: "same_version",version: 2,status: W.channel_status_close()},
+    ]
   end
 
-  test "tunnel/checkpoint", context do
-    Case.checkpoint(context)
+
+  test "channel merge logic" do
+    r = W.channels_merge([], remote_source())
+    assert r == working()
+    r2 = W.channels_merge(working(), changed())
+    assert Enum.sort(r2) == Enum.sort(merged())
   end
+
+
 
 
 end
