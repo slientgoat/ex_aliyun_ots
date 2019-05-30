@@ -28,7 +28,6 @@ defmodule ExAliyunOts.Tunnel.Producer do
       tunnel_id: channel_config.tunnel_id,
       client_id: channel_config.client_id,
       channel_id: channel_config.channel_id,
-      checkpoint_interval: channel_config.checkpoint_interval,
       customer_module: channel_config.customer_module,
       backoff: Backoff.new(),
       token: nil,

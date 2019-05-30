@@ -3,7 +3,16 @@ defmodule ExAliyunOts.Tunnel.Channel do
 
   use Broadway
   alias ExAliyunOts.Tunnel.Producer
+  @typedoc "The supervisor specification"
+  @type channel_config :: %{
+          required(:instance) => atom(),
+          required(:customer_module) => atom(),
+          required(:tunnel_id) => integer(),
+          required(:client_id) => integer(),
+          required(:channel_id) => integer()
+        }
 
+  @spec create(channel_config :: channel_config) :: {:ok, pid}
   def create(channel_config) do
     Broadway.start_link(
       __MODULE__,
@@ -16,19 +25,9 @@ defmodule ExAliyunOts.Tunnel.Channel do
         ]
       ],
       processors: [
-        default: [
-          stages: 2
-        ]
+        default: []
       ],
-      batchers: [
-        sqs: [
-          stages: 2,
-          batch_size: 20
-        ],
-        s3: [
-          stages: 2
-        ]
-      ]
+      batchers: get_batchers_config(channel_config.customer_module)
     )
   end
 
@@ -42,5 +41,16 @@ defmodule ExAliyunOts.Tunnel.Channel do
 
   def handle_batch(batcher, messages, batch_info, %{real_customer: customer_module} = context) do
     customer_module.handle_batch(batcher, messages, batch_info, context)
+  end
+
+  defp default_batchers_config() do
+    [
+      default: []
+    ]
+  end
+
+  @mix_app Mix.Project.config()[:app]
+  defp get_batchers_config(customer_module) do
+    Application.get_env(@mix_app, customer_module)[:batchers_config] || default_batchers_config()
   end
 end

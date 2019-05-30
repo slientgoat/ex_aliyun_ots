@@ -9,77 +9,67 @@ defmodule ExAliyunOts.Tunnel.Supervisor do
   @type tunnel_config :: %{
           required(:instance) => atom(),
           required(:table_name) => binary(),
-          required(:tunnel_name) => binary
+          required(:tunnel_name) => binary(),
+          required(:customer_module) => atom(),
+          optional(:worker_size) => integer(),
+          optional(:index) => integer(),
+          optional(:heartbeat_timeout) => integer(),
+          optional(:heartbeat_interval) => integer()
         }
-  @doc """
-    arg:
-      :client_config
-        :instance
-        :table_name
-        :tunnel_name
-      :worker_config
-        :pool_size
-        :channel_config
-        :heartbeat_timeout
-        :heartbeat_interval
-        :customer_module
-    arg = %{tunnel_config: %{instance: EDCEXTestInstance,table_name: "pxy_test",tunnel_name: "add2"},
-            worker_config: %{pool_size: 2,heartbeat_timeout: 30_000,heartbeat_interval: 10_000,customer_module: CustomerExample}
-           }
 
+  @mix_app Mix.Project.config()[:app]
+
+  def specs() do
+    tunnels = Application.get_env(@mix_app, :tunnels, [])
+    Enum.map(tunnels, &build_worker_spec/1)
+  end
+
+  @doc """
+  Starts a tunnel client linked to the current process.
   """
   @spec start_link(arg :: tunnel_config, GenServer.Option) :: Supervisor.on_start()
   def start_link(arg, opt) do
     Supervisor.start_link(__MODULE__, arg, opt)
   end
 
-  def workers() do
-    tunnel_config = %{
-      client_config: %{
-        table_name: "pxy_test",
-        tunnel_name: "add2",
-        worker_size: 2
-      },
-      worker_config: %{
-        heartbeat_timeout: 30,
-        heartbeat_interval: 10_000,
-        checkpoint_interval: 10_000,
-        customer_module: CustomerExample,
-        instance: EDCEXTestInstance,
-        tunnel_id: nil,
-        client_id: nil,
-        index: nil
-      }
-    }
+  defp build_worker_spec(customer_module) do
+    tunnel_config =
+      Application.get_env(@mix_app, customer_module)[:tunnel_config]
+      |> tunnel_config_validate()
 
-    tunnel_config2 = %{
-      client_config: %{
-        table_name: "pxy_test",
-        tunnel_name: "add",
-        worker_size: 2
-      },
-      worker_config: %{
-        heartbeat_timeout: 30,
-        heartbeat_interval: 10_000,
-        checkpoint_interval: 10_000,
-        customer_module: CustomerExample,
-        instance: EDCEXTestInstance,
-        tunnel_id: nil,
-        client_id: nil,
-        index: nil
-      }
-    }
+    default_tunnel_config(customer_module)
+    |> Map.merge(tunnel_config)
+    |> supervisor_spec()
+  end
 
-    [
-      supervisor_spec(tunnel_config)
-      #      supervisor_spec(tunnel_config2)
-    ]
+  @required_options [:instance, :table_name, :tunnel_name]
+  defp tunnel_config_validate(tunnel_config) do
+    keys = Map.keys(tunnel_config)
+
+    case @required_options -- keys do
+      [] ->
+        tunnel_config
+
+      r ->
+        raise ExAliyunOts.Error,
+              "tunnel_config_validate error: options #{inspect(r)} are required"
+    end
+  end
+
+  defp default_tunnel_config(customer_module) do
+    %{
+      customer_module: customer_module,
+      heartbeat_timeout: 300,
+      heartbeat_interval: 30,
+      worker_size: 1,
+      index: 1
+    }
   end
 
   @impl true
   def init(tunnel_config) do
     children = worker_spec(tunnel_config)
-    Supervisor.init(children, strategy: :one_for_one)
+    Supervisor.init(children, strategy: :rest_for_one)
   end
 
   defp supervisor_spec(tunnel_config) do
@@ -92,18 +82,16 @@ defmodule ExAliyunOts.Tunnel.Supervisor do
   end
 
   defp gen_supervisor_name(tunnel_config) do
-    instance = tunnel_config.worker_config.instance
-    client_config = tunnel_config.client_config
-    "#{instance}_#{client_config.table_name}_#{client_config.tunnel_name}"
+    instance = tunnel_config.instance
+    "#{instance}_#{tunnel_config.table_name}_#{tunnel_config.tunnel_name}"
   end
 
   def worker_spec(tunnel_config) do
-    worker_size = tunnel_config.client_config.worker_size
+    worker_size = tunnel_config.worker_size
 
     f = fn x ->
       id = gen_id(tunnel_config, x)
-      worker_config = %{tunnel_config.worker_config | index: x}
-      tunnel_config = %{tunnel_config | worker_config: worker_config}
+      tunnel_config = %{tunnel_config | index: x}
 
       %{
         id: id,

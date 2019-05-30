@@ -6,7 +6,7 @@ defmodule CustomerExample do
 
   import Integer
 
-  # 被Broadway.Processor调用
+  # called by Broadway.Processor
   def handle_message(_, message, _) do
     message
     |> Message.update_data(&process_data/1)
@@ -26,7 +26,7 @@ defmodule CustomerExample do
     Message.put_batcher(message, :s3)
   end
 
-  # 被Broadway.Consumer调用
+  # called by Broadway.Consumer
   def handle_batch(:sqs, messages, _batch_info, _context) do
     IO.inspect(messages |> Enum.map(& &1.data), label: "length,#{length(messages)}-sqs")
     messages
@@ -39,4 +39,6 @@ defmodule CustomerExample do
     messages
     # Send batch of messages to S3
   end
+
+
 end

@@ -47,14 +47,19 @@ defmodule ExAliyunOts.Tunnel.Worker do
   def init(tunnel_config) do
     Process.flag(:trap_exit, true)
     send(self(), :connect)
-    extend = %{working_channels: %{}}
-    state = Map.merge(tunnel_config, extend)
+
+    worker_config =
+      %{tunnel_id: nil, client_id: nil}
+      |> Map.merge(tunnel_config)
+      |> Map.put(:heartbeat_interval, tunnel_config.heartbeat_interval * 1000)
+
+    state = %{working_channels: %{}, worker_config: worker_config}
     {:ok, state}
   end
 
   def handle_info(:connect, state) do
-    %{worker_config: worker_config, client_config: client_config} = state
-    {tunnel, client_id} = connect(client_config, worker_config)
+    %{worker_config: worker_config} = state
+    {tunnel, client_id} = connect(worker_config)
 
     worker_config =
       Map.put(worker_config, :tunnel_id, tunnel.tunnel_id)
@@ -103,10 +108,10 @@ defmodule ExAliyunOts.Tunnel.Worker do
     {:noreply, state}
   end
 
-  def connect(client_config, worker_config) do
+  defp connect(worker_config) do
     instance = worker_config.instance
-    table_name = client_config.table_name
-    tunnel_name = client_config.tunnel_name
+    table_name = worker_config.table_name
+    tunnel_name = worker_config.tunnel_name
 
     {:ok, %DescribeTunnelResponse{tunnel: tunnel}} =
       execute_describe_tunnel(instance, table_name, tunnel_name, nil)
@@ -130,14 +135,17 @@ defmodule ExAliyunOts.Tunnel.Worker do
     )
   end
 
-  def create_channel_broadway(channel, worker_config, working_channels) do
-    channel_config = Map.put(worker_config, :channel_id, channel.channel_id)
+  @required_channel_config [:instance, :customer_module, :tunnel_id, :client_id]
+  defp create_channel_broadway(channel, worker_config, working_channels) do
+    channel_config =
+      Map.take(worker_config, @required_channel_config)
+      |> Map.put(:channel_id, channel.channel_id)
 
     {:ok, pid} = Channel.create(channel_config)
     Map.put(working_channels, channel.channel_id, %{info: channel, pid: pid})
   end
 
-  def remove_channel_broadway(identifier, working_channels) do
+  defp remove_channel_broadway(identifier, working_channels) do
     {channel, rest} = Map.pop(working_channels, identifier)
     GenServer.stop(channel.pid)
     rest
