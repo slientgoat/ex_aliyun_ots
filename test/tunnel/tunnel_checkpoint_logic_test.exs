@@ -4,7 +4,6 @@ defmodule ExAliyunOtsTest.TunnelCheckpointLogicTest do
   """
   use ExAliyunOtsTest.TunnelCase
   alias ExAliyunOtsTest.TunnelCase, as: Case
-
   alias ExAliyunOts.TableStoreTunnel.GetCheckpointResponse
   alias ExAliyunOts.TableStoreTunnel.ReadRecordsResponse
   alias ExAliyunOts.TableStoreTunnel.CheckpointResponse
@@ -100,8 +99,6 @@ defmodule ExAliyunOtsTest.TunnelCheckpointLogicTest do
     assert(length(rec)== 2)
   end
   
-  @table_name "pxy_test"
-  @tunnel_name "exampleTunnel"
   # 按序消费,同时验证channel的状态="CLOSE"时，readrecords、checkpoint和get_checkpoint接口是否可以继续使用？结论：是的
   test "normal tunnel checkpointer logic", %{client_id: client_id, channel_id: channel_id} = context  do
     Case.checkpoint(context)
@@ -140,7 +137,7 @@ defmodule ExAliyunOtsTest.TunnelCheckpointLogicTest do
   # 等待心跳超时，channel状态变成"CLOSE"后执行readreocrds
   defp wait_channel_status_to_close(context,client_id, channel_id, token5) do
     Process.sleep(10 * 1000)
-    with {:ok, %DescribeTunnelResponse{channels: [%{channel_status: "CLOSE"}]}} <- describe_tunnel(@table_name,@tunnel_name, nil),
+    with {:ok, %DescribeTunnelResponse{channels: [%{channel_status: "CLOSE"}]}} <- describe_tunnel(Case.table_name(),Case.tunnel_name(), nil),
          {:ok, result2, _} <- read_records(context.tunnel.tunnel_id, client_id, channel_id, token5) do
       if result2.records == [] do
         Case.put_row()
@@ -151,26 +148,25 @@ defmodule ExAliyunOtsTest.TunnelCheckpointLogicTest do
     else
       {:ok, %DescribeTunnelResponse{channels: [%{channel_status: _}]}} ->
         wait_channel_status_to_close(context, client_id, channel_id, token5)
-      error ->
-        IO.inspect(error, label: "wait_channel_status_to_close")
+      _error ->
         raise :readrecords_loop_error
     end
 
   end
 
-  test "temp test", %{client_id: client_id, channel_id: channel_id} = context  do
-    Case.checkpoint(context)
-    l = batch_put_row(11)
-    r1 = get_checkpoint(context.tunnel.tunnel_id, client_id, channel_id)
-    {:ok, %GetCheckpointResponse{checkpoint: token1, sequence_number: _seq_num}} = r1
-    r3 = read_records(context.tunnel.tunnel_id, client_id, channel_id, token1)
-    {:ok, %ReadRecordsResponse{next_token: _, records: rec}, _} = r3
-    assert(length(rec) == length(l))
-
-  end
-
-  defp batch_put_row(n) do
-    Enum.map(1..n, fn _x -> Case.put_row() end)
-  end
+#  test "add some fresh data", %{client_id: client_id, channel_id: channel_id} = context  do
+#    Case.checkpoint(context)
+#    l = batch_put_row(11)
+#    r1 = get_checkpoint(context.tunnel.tunnel_id, client_id, channel_id)
+#    {:ok, %GetCheckpointResponse{checkpoint: token1, sequence_number: _seq_num}} = r1
+#    r3 = read_records(context.tunnel.tunnel_id, client_id, channel_id, token1)
+#    {:ok, %ReadRecordsResponse{next_token: _, records: rec}, _} = r3
+#    assert(length(rec) == length(l))
+#
+#  end
+#
+#  defp batch_put_row(n) do
+#    Enum.map(1..n, fn _x -> Case.put_row() end)
+#  end
 end
 

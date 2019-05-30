@@ -29,7 +29,6 @@ defmodule ExAliyunOtsTest.TunnelApiTest do
     result2 = get_checkpoint(context.tunnel.tunnel_id, client_id, channel_id)
     {:ok, %GetCheckpointResponse{checkpoint: checkpoint, sequence_number: _sequence_number}} = result2
     result3 = read_records(context.tunnel.tunnel_id, client_id, channel_id, checkpoint)
-    IO.inspect(result3)
     assert {:ok, %ReadRecordsResponse{}, _} = result3
   end
 

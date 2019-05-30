@@ -25,11 +25,11 @@ defmodule ExAliyunOtsTest.TunnelCase do
 
   @instance_key EDCEXTestInstance
   @table_name "pxy_test"
-  @tunnel_name "add2"
+  @tunnel_name "exampleTunnel"
   @client_tag :inet.gethostname()
               |> elem(1)
 
-  @request_timeout 30
+  @request_timeout 10
   use ExAliyunOts, instance: @instance_key
   alias ExAliyunOts.TableStoreTunnel.DescribeTunnelResponse
   alias ExAliyunOts.TableStoreTunnel.ClientConfig
@@ -108,4 +108,7 @@ defmodule ExAliyunOtsTest.TunnelCase do
     }
     {:ok, _result} = ExAliyunOts.Client.put_row(@instance_key, var_put_row)
   end
+
+  def table_name(),do: @table_name
+  def tunnel_name(),do: @tunnel_name
 end
