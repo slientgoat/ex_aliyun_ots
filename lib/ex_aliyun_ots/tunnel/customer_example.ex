@@ -39,6 +39,4 @@ defmodule CustomerExample do
     messages
     # Send batch of messages to S3
   end
-
-
 end

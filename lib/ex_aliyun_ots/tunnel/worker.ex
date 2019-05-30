@@ -96,9 +96,11 @@ defmodule ExAliyunOts.Tunnel.Worker do
     end
   end
 
-  #  def handle_info({:EXIT, _supervisor_pid, _reason}, state) do
-  #    {:noreply, state}
-  #  end
+  def handle_info({:EXIT, channel_pid, reason}, state) do
+    {identifier, _} = Enum.find(state.working_channels, fn {k, v} -> v.pid == channel_pid end)
+    working_channels = remove_channel_broadway(identifier, state.working_channels)
+    {:noreply, %{state | working_channels: working_channels}}
+  end
 
   def handle_call(_msg, _from, state) do
     {:reply, :ok, state}
@@ -106,6 +108,11 @@ defmodule ExAliyunOts.Tunnel.Worker do
 
   def handle_cast(_msg, state) do
     {:noreply, state}
+  end
+
+  def terminate(_reason, state) do
+    shutdown(state.work_config)
+    :ok
   end
 
   defp connect(worker_config) do
@@ -147,7 +154,7 @@ defmodule ExAliyunOts.Tunnel.Worker do
 
   defp remove_channel_broadway(identifier, working_channels) do
     {channel, rest} = Map.pop(working_channels, identifier)
-    GenServer.stop(channel.pid)
+    if channel != nil and Process.alive?(channel.pid), do: GenServer.stop(channel.pid)
     rest
   end
 
